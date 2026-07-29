@@ -3,38 +3,38 @@ import subprocess
 import threading
 import io
 
-class FFmpegFragmenter(Output):
+class MP4BoxFragmenter(Output):
     def __init__(self):
         super().__init__()
+
         self.buffer = io.BytesIO()
         self.lock = threading.Lock()
 
-        # Updated FFmpeg call without the unsupported "default_base"
-        self.ffmpeg = subprocess.Popen([
-            "ffmpeg",
-            "-i", "pipe:0",
-            "-c:v", "copy",
-            "-f", "mp4",
-            "-movflags", "frag_keyframe+empty_moov",
-            "pipe:1"
+        # Real-time MP4 fragmenter using GPAC / MP4Box
+        self.mp4box = subprocess.Popen([
+            "MP4Box",
+            "-add", "pipe:1:fmt=h264",
+            "-new", "-",              # produce fMP4 to stdout
+            "-frag", "1000"           # 1ms fragment interval (fast)
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-        assert self.ffmpeg.stdin is not None
-        assert self.ffmpeg.stdout is not None
+        assert self.mp4box.stdin is not None
+        assert self.mp4box.stdout is not None
 
-        threading.Thread(target=self._reader, daemon=True).start()
+        threading.Thread(target=self._reader_thread, daemon=True).start()
 
-    def _reader(self):
+    def _reader_thread(self):
         while True:
-            data = self.ffmpeg.stdout.read(4096)
+            data = self.mp4box.stdout.read(4096)
             if not data:
                 break
+
             with self.lock:
                 self.buffer.write(data)
 
     def outputframe(self, frame, *args, **kwargs):
         try:
-            self.ffmpeg.stdin.write(frame)
+            self.mp4box.stdin.write(frame)
         except BrokenPipeError:
             pass
 
@@ -47,7 +47,7 @@ class FFmpegFragmenter(Output):
 
     def close(self):
         try:
-            self.ffmpeg.stdin.close()
+            self.mp4box.stdin.close()
         except:
             pass
-        self.ffmpeg.terminate()
+        self.mp4box.terminate()
