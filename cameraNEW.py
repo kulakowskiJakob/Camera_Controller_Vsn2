@@ -1,6 +1,6 @@
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
-from pipe_output import FFmpegFragmenter
+from pipe_output import MP4BoxFragmenter
 
 class Camera:
     def __init__(self):
@@ -8,7 +8,7 @@ class Camera:
         config = self.picam2.create_video_configuration()
         self.picam2.configure(config)
 
-        self.output = FFmpegFragmenter()
+        self.output = MP4BoxFragmenter()
         self.encoder = H264Encoder(bitrate=2000000)
 
         self.picam2.start_recording(self.encoder, self.output)
