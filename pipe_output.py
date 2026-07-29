@@ -9,12 +9,13 @@ class FFmpegFragmenter(Output):
         self.buffer = io.BytesIO()
         self.lock = threading.Lock()
 
+        # Updated FFmpeg call without the unsupported "default_base"
         self.ffmpeg = subprocess.Popen([
             "ffmpeg",
             "-i", "pipe:0",
             "-c:v", "copy",
             "-f", "mp4",
-            "-movflags", "frag_keyframe+empty_moov+default_base",
+            "-movflags", "frag_keyframe+empty_moov",
             "pipe:1"
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
@@ -32,7 +33,6 @@ class FFmpegFragmenter(Output):
                 self.buffer.write(data)
 
     def outputframe(self, frame, *args, **kwargs):
-        # Picamera2 may pass 6 args; we ignore them.
         try:
             self.ffmpeg.stdin.write(frame)
         except BrokenPipeError:
