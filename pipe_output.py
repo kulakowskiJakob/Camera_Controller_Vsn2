@@ -18,6 +18,9 @@ class FFmpegFragmenter(Output):
             "pipe:1"
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
+        assert self.ffmpeg.stdin is not None
+        assert self.ffmpeg.stdout is not None
+
         threading.Thread(target=self._reader, daemon=True).start()
 
     def _reader(self):
@@ -28,9 +31,12 @@ class FFmpegFragmenter(Output):
             with self.lock:
                 self.buffer.write(data)
 
-    def outputframe(self, frame, keyframe=True):
-        # Write raw H.264 frames to FFmpeg
-        self.ffmpeg.stdin.write(frame)
+    def outputframe(self, frame, *args, **kwargs):
+        # Picamera2 may pass 6 args; we ignore them.
+        try:
+            self.ffmpeg.stdin.write(frame)
+        except BrokenPipeError:
+            pass
 
     def get_fragment(self):
         with self.lock:
@@ -40,5 +46,8 @@ class FFmpegFragmenter(Output):
         return data
 
     def close(self):
-        self.ffmpeg.stdin.close()
+        try:
+            self.ffmpeg.stdin.close()
+        except:
+            pass
         self.ffmpeg.terminate()
