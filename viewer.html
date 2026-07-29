@@ -17,7 +17,7 @@
             const mime = 'video/mp4; codecs="avc1.42E01E"';
             const buffer = mediaSource.addSourceBuffer(mime);
 
-            const response = await fetch("http://172.18.18.152:5000/video");
+            const response = await fetch("http://YOUR_PI_IP:5000/video");
             const reader = response.body.getReader();
 
             function push() {
