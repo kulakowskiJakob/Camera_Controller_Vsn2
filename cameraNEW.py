@@ -1,37 +1,44 @@
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder
-from picamera2.outputs import CircularOutput
+from picamera2.outputs import FileOutput
+import io
 
 class Camera:
     def __init__(self, width=1280, height=720, bitrate=2000000):
         self.width = width
         self.height = height
-        self.bitrate = bitrate
 
-        self.camera = Picamera2()
-        config = self.camera.create_video_configuration(
+        self.picam2 = Picamera2()
+        config = self.picam2.create_video_configuration(
             main={"size": (width, height)}
         )
-        self.camera.configure(config)
+        self.picam2.configure(config)
 
-        # H.264 hardware encoder
-        self.encoder = H264Encoder(bitrate=self.bitrate)
+        # Use H.264 hardware encoder
+        self.encoder = H264Encoder(bitrate=bitrate)
 
-        # Circular output allows continuous streaming
-        self.output = CircularOutput(buffersize=4)
+        # Use BytesIO as an in-memory output buffer
+        self.buffer = io.BytesIO()
+        self.output = FileOutput(self.buffer)
 
         self.frame_id = 0
 
-        # Start recording immediately
-        self.camera.start_recording(self.encoder, self.output)
+        self.picam2.start_recording(self.encoder, self.output)
 
     def get_h264_chunk(self):
-        # Read encoded H.264 data
-        data = self.output.read()
-        self.frame_id += 1
-        return data
+        # Get current buffer contents
+        data = self.buffer.getvalue()
+
+        # Clear buffer so only new data appears next call
+        self.buffer.seek(0)
+        self.buffer.truncate(0)
+
+        if data:
+            self.frame_id += 1
+            return data
+
+        return None
 
     def stop(self):
-        self.camera.stop_recording()
-        self.camera.close()
-        
+        self.picam2.stop_recording()
+        self.picam2.close()
