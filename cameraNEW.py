@@ -8,8 +8,8 @@ class Camera:
         config = self.picam2.create_video_configuration()
         self.picam2.configure(config)
 
-        self.encoder = H264Encoder(bitrate=2000000)
         self.output = FFmpegFragmenter()
+        self.encoder = H264Encoder(bitrate=2000000)
 
         self.picam2.start_recording(self.encoder, self.output)
 
