@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Raspberry Pi 5 Camera
+    </title>
+
+
+    <!-- HLS.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+
+    <style>
+
+        body {
+
+            background-color: #111;
+
+            color: white;
+
+            font-family: Arial, sans-serif;
+
+            text-align: center;
+
+        }
+
+
+        h1 {
+
+            margin-top: 30px;
+
+        }
+
+
+        video {
+
+            width: 90%;
+
+            max-width: 1280px;
+
+            border-radius: 10px;
+
+            border: 2px solid white;
+
+        }
+
+
+        .status {
+
+            margin-top: 15px;
+
+            font-size: 18px;
+
+        }
+
+    </style>
+
+
+</head>
+
+
+
+<body>
+
+
+<h1>
+    Raspberry Pi 5 H.264 Camera Stream
+</h1>
+
+
+
+<video id="video"
+       controls
+       autoplay
+       muted>
+</video>
+
+
+
+<div class="status"
+     id="status">
+
+Connecting...
+
+</div>
+
+
+
+
+<script>
+
+
+const video = document.getElementById(
+    "video"
+);
+
+
+const status = document.getElementById(
+    "status"
+);
+
+
+
+const streamURL =
+    "/stream.m3u8";
+
+
+
+//
+// Check HLS support
+//
+
+if (Hls.isSupported()) {
+
+
+    const hls = new Hls();
+
+
+    hls.loadSource(
+        streamURL
+    );
+
+
+    hls.attachMedia(
+        video
+    );
+
+
+    hls.on(
+        Hls.Events.MANIFEST_PARSED,
+        function() {
+
+            status.innerHTML =
+                "Live Stream Connected";
+
+            video.play();
+
+        }
+    );
+
+
+
+    hls.on(
+        Hls.Events.ERROR,
+        function(event, data) {
+
+            console.log(
+                "HLS Error:",
+                data
+            );
+
+
+            status.innerHTML =
+                "Stream Error";
+
+        }
+    );
+
+
+}
+
+
+
+//
+// Safari/iOS support
+//
+
+else if (
+    video.canPlayType(
+        "application/vnd.apple.mpegurl"
+    )
+) {
+
+
+    video.src =
+        streamURL;
+
+
+    video.addEventListener(
+        "loadedmetadata",
+        function() {
+
+            status.innerHTML =
+                "Live Stream Connected";
+
+            video.play();
+
+        }
+    );
+
+
+}
+
+
+
+else {
+
+
+    status.innerHTML =
+        "Browser does not support HLS";
+
+
+}
+
+
+
+</script>
+
+
+
+</body>
+
+</html>
